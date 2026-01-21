@@ -1,163 +1,50 @@
-package com.mycompany.nadim;
+// Import necessary packages
+import java.util.List;
 
-import java.awt.image.BufferedImage;
-import java.util.Random;
-
+// Class representing a Map object
 public class Mapa {
-    private final Casilla[][] tiles;
-    private final int width;
-    private final int height;
-    private long seed;
-    private boolean hasSeed;
 
-    public Mapa(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.tiles = new Casilla[width][height];
+    // Properties of the Map
+    private List<String> keys; // List to hold keys
+    private List<String> values; // List to hold values
+
+    // Constructor initializing the Map
+    public Mapa() {
+        keys = new ArrayList<>(); // Initialize the keys list
+        values = new ArrayList<>(); // Initialize the values list
     }
 
-    public Casilla getTileAt(int x, int y) {
-        if (!inBounds(x, y)) {
-            throw new IndexOutOfBoundsException();
-        }
-        return tiles[x][y];
+    // Method to add a key-value pair to the Map
+    public void put(String key, String value) {
+        keys.add(key); // Add key to the keys list
+        values.add(value); // Add value to the values list
     }
 
-    public void setTileAt(int x, int y, Casilla tile) {
-        if (!inBounds(x, y)) {
-            throw new IndexOutOfBoundsException();
+    // Method to get a value by its key
+    public String get(String key) {
+        int index = keys.indexOf(key); // Find the index of the key
+        if (index >= 0) {
+            return values.get(index); // Return the corresponding value
         }
-        tiles[x][y] = tile;
+        return null; // Return null if key is not found
     }
 
-    public void generate() {
-        if (!hasSeed) {
-            seed = new Random().nextLong();
-            hasSeed = true;
-        }
-        generateWithSeed(seed);
-    }
-
-    public void generateWithSeed(long seed) {
-        this.seed = seed;
-        this.hasSeed = true;
-        ManejadorArchivos fm = ManejadorArchivos.withDefaultRoot();
-        SpriteSheet tileset = fm.loadSpriteSheet("tileset1.png", 16, 16);
-
-        BufferedImage roadNormal = tileset.getTileOrNull(0, 0);
-        BufferedImage normalGrass = tileset.getTileOrNull(5, 0);
-        BufferedImage encounterGrass = tileset.getTileOrNull(6, 0);
-        BufferedImage normalGrass2 = tileset.getTileOrNull(4, 1);
-        BufferedImage normalGrass3 = tileset.getTileOrNull(5, 1);
-        BufferedImage normalGrass4 = tileset.getTileOrNull(6, 1);
-        BufferedImage treeSprite = tileset.getTileOrNull(4, 2);
-        BufferedImage flowerSprite = tileset.getTileOrNull(5, 2);
-
-        Random rnd = new Random(seed);
-        BufferedImage baseGrass = firstNonNull(normalGrass, normalGrass2, normalGrass3, normalGrass4, encounterGrass,
-                roadNormal);
-        BufferedImage[] grassVariants = new BufferedImage[] { normalGrass, normalGrass2, normalGrass3, normalGrass4,
-                baseGrass };
-
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                BufferedImage pick = grassVariants[rnd.nextInt(grassVariants.length)];
-                if (pick == null) {
-                    pick = baseGrass;
-                }
-                CasillaTerreno t = new CasillaTerreno(pick, true);
-                tiles[x][y] = t;
-            }
-        }
-
-        int patchCount = Math.max(2, (width * height) / 80);
-        for (int p = 0; p < patchCount; p++) {
-            int cx = rnd.nextInt(width);
-            int cy = rnd.nextInt(height);
-            int radius = 1 + rnd.nextInt(2);
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dy = -radius; dy <= radius; dy++) {
-                    if (Math.abs(dx) + Math.abs(dy) <= radius) {
-                        int tx = cx + dx;
-                        int ty = cy + dy;
-                        if (inBounds(tx, ty)) {
-                            CasillaPasto g = new CasillaPasto(encounterGrass != null ? encounterGrass : baseGrass,
-                                    0.18f);
-                            tiles[tx][ty] = g;
-                        }
-                    }
-                }
-            }
-        }
-
-        int treeAttempts = (width * height) / 10;
-        for (int i = 0; i < treeAttempts; i++) {
-            int x = rnd.nextInt(width);
-            int y = rnd.nextInt(height);
-            if (!inBounds(x, y)) {
-                continue;
-            }
-            Casilla current = tiles[x][y];
-            if (current != null && current.canBeTraversed() && rnd.nextFloat() < 0.35f) {
-                String resource = rnd.nextBoolean() ? "Guijarro" : "Baya";
-                int yield = 1 + rnd.nextInt(4);
-                CasillaRecurso rt = new CasillaRecurso(treeSprite, resource, yield, 300, false);
-                tiles[x][y] = rt;
-            }
-        }
-
-        int flowerAttempts = (width * height) / 15;
-        for (int i = 0; i < flowerAttempts; i++) {
-            int x = rnd.nextInt(width);
-            int y = rnd.nextInt(height);
-            if (!inBounds(x, y)) {
-                continue;
-            }
-            Casilla current = tiles[x][y];
-            if (current != null && current.canBeTraversed() && !(current instanceof CasillaPasto)
-                    && rnd.nextFloat() < 0.25f) {
-                String resource = rnd.nextBoolean() ? "Planta" : "Baya";
-                int yield = 1 + rnd.nextInt(3);
-                CasillaRecurso rt = new CasillaRecurso(flowerSprite, resource, yield, 200, true);
-                tiles[x][y] = rt;
-            }
+    // Method to remove a key-value pair from the Map
+    public void remove(String key) {
+        int index = keys.indexOf(key); // Find the index of the key
+        if (index >= 0) {
+            keys.remove(index); // Remove key from the keys list
+            values.remove(index); // Remove corresponding value from the values list
         }
     }
 
-    public long getSeed() {
-        return seed;
+    // Method to get all the keys in the Map
+    public List<String> getKeys() {
+        return keys; // Return the list of keys
     }
 
-    public void tickResources() {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Casilla tile = tiles[x][y];
-                if (tile instanceof CasillaRecurso) {
-                    CasillaRecurso resource = (CasillaRecurso) tile;
-                    resource.tickCooldown();
-                }
-            }
-        }
-    }
-
-    private boolean inBounds(int x, int y) {
-        return x >= 0 && y >= 0 && x < width && y < height;
-    }
-
-    private BufferedImage firstNonNull(BufferedImage... options) {
-        for (BufferedImage img : options) {
-            if (img != null) {
-                return img;
-            }
-        }
-        return null;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
+    // Method to get all the values in the Map
+    public List<String> getValues() {
+        return values; // Return the list of values
     }
 }
